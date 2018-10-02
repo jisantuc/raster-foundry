@@ -53,18 +53,6 @@ object UserDao extends Dao[User] {
       }
   }
 
-  def unsafeGetUserPlatform(id: String): ConnectionIO[Platform] =
-    for {
-      platformRole <- {
-        UserGroupRoleDao.query
-          .filter(fr"group_type = 'PLATFORM' :: group_type")
-          .filter(fr"user_id = $id")
-          .filter(fr"is_active = true")
-          .select
-      }
-      platform <- PlatformDao.unsafeGetPlatformById(platformRole.groupId)
-    } yield platform
-
   def getUserById(id: String): ConnectionIO[Option[User]] = {
     filterById(id).selectOption
   }
@@ -76,73 +64,6 @@ object UserDao extends Dao[User] {
       case None =>
         List.empty[User].pure[ConnectionIO]
     }
-  }
-
-  def getUserAndActiveRolesById(
-      id: String): ConnectionIO[UserOptionAndRoles] = {
-    for {
-      user <- getUserById(id)
-      roles <- {
-        user match {
-          case Some(u) =>
-            UserGroupRoleDao.listByUser(u)
-          case _ =>
-            List.empty[UserGroupRole].pure[ConnectionIO]
-        }
-      }
-    } yield UserOptionAndRoles(user, roles)
-  }
-
-  def createUserWithJWT(
-      creatingUser: User,
-      jwtUser: User.JwtFields): ConnectionIO[(User, List[UserGroupRole])] = {
-    for {
-      organization <- OrganizationDao.query
-        .filter(jwtUser.organizationId)
-        .selectOption
-      createdUser <- {
-        organization match {
-          case Some(o) =>
-            val newUser = User.Create(
-              jwtUser.id,
-              Viewer,
-              jwtUser.email,
-              jwtUser.name,
-              jwtUser.picture
-            )
-            create(newUser)
-          case None =>
-            throw new RuntimeException(
-              s"Tried to create a user using a non-existent organization ID: ${jwtUser.organizationId}"
-            )
-        }
-      }
-      platformRole <- UserGroupRoleDao.create(
-        UserGroupRole
-          .Create(
-            createdUser.id,
-            GroupType.Platform,
-            jwtUser.platformId,
-            GroupRole.Member
-          )
-          .toUserGroupRole(creatingUser, MembershipStatus.Approved)
-      )
-      organizationRole <- UserGroupRoleDao.create(
-        UserGroupRole
-          .Create(
-            createdUser.id,
-            GroupType.Organization,
-            organization
-              .getOrElse(
-                throw new RuntimeException(
-                  "Tried to create a user role using a non-existent organization ID")
-              )
-              .id,
-            GroupRole.Member
-          )
-          .toUserGroupRole(creatingUser, MembershipStatus.Approved)
-      )
-    } yield (createdUser, List(platformRole, organizationRole))
   }
 
   def updateUser(user: User, userId: String): ConnectionIO[Int] = {

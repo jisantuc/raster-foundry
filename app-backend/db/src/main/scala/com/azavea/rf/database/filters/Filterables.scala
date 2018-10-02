@@ -289,34 +289,6 @@ trait Filterables extends RFMeta with LazyLogging {
         )
     }
 
-  implicit val exportQueryparamsFilter: Filterable[Any, ExportQueryParameters] =
-    Filterable[Any, ExportQueryParameters] {
-      exportParams: ExportQueryParameters =>
-        List(
-          exportParams.organization.map({ orgId =>
-            fr"organization = $orgId"
-          }),
-          exportParams.project.map({ projId =>
-            fr"project_id = $projId"
-          }),
-          exportParams.analysis.map({ analysisId =>
-            fr"toolrun_id = $analysisId"
-          }),
-          exportParams.exportStatus.toList.toNel.map({ statuses =>
-            val exportStatuses = statuses.map({ status =>
-              try ExportStatus.fromString(status)
-              catch {
-                case e: Exception =>
-                  throw new IllegalArgumentException(
-                    s"Invalid Ingest Status: $status"
-                  )
-              }
-            })
-            Fragments.in(fr"export_status", exportStatuses)
-          })
-        )
-    }
-
   implicit val shapeQueryparamsFilter: Filterable[Any, ShapeQueryParameters] =
     Filterable[Any, ShapeQueryParameters] { shapeParams: ShapeQueryParameters =>
       Filters.timestampQP(shapeParams.timestampParams) ++
@@ -367,13 +339,6 @@ trait Filterables extends RFMeta with LazyLogging {
           Filters.searchQP(params.searchParams, List("name")) ++
           Filters.activationQP(params.activationParams) ++
           Filters.platformIdQP(params.platformIdParams)
-    }
-
-  implicit val orgSearchQueryParamsFilter
-    : Filterable[Organization, SearchQueryParameters] =
-    Filterable[Organization, SearchQueryParameters] {
-      params: SearchQueryParameters =>
-        Filters.searchQP(params, List("name"))
     }
 
   implicit val userSearchQueryParamsFilter

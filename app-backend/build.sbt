@@ -168,21 +168,15 @@ lazy val apiDependencies = dbDependencies ++ migrationsDependencies ++
   Dependencies.akkastream,
   Dependencies.akkaSlf4j,
   Dependencies.akkaHttpExtensions,
-  Dependencies.commonsIO,
   Dependencies.ammoniteOps,
   Dependencies.geotrellisSlick,
-  Dependencies.geotrellisS3,
-  Dependencies.geotrellisShapefile,
-  Dependencies.betterFiles,
-  Dependencies.caffeine,
-  Dependencies.scaffeine,
   Dependencies.findbugAnnotations,
   Dependencies.dropbox,
   Dependencies.awsStsSdk
 )
 
 lazy val root = Project("root", file("."))
-  .aggregate(api, db, common, migrations, datamodel, batch, tile, tool, bridge)
+  .aggregate(api, db, common, migrations, datamodel)
   .settings(commonSettings: _*)
 
 lazy val api = Project("api", file("api"))
@@ -202,14 +196,7 @@ lazy val common = Project("common", file("common"))
   .settings({
     libraryDependencies ++= testDependencies ++ Seq(
       Dependencies.nimbusJose,
-      Dependencies.akka,
-      Dependencies.akkahttp,
       Dependencies.akkaCirceJson,
-      Dependencies.commonsIO,
-      Dependencies.caffeine,
-      Dependencies.scaffeine,
-      Dependencies.elasticacheClient,
-      Dependencies.geotrellisS3,
       Dependencies.findbugAnnotations,
       Dependencies.ammoniteOps,
       Dependencies.chill,
@@ -249,7 +236,6 @@ lazy val migrations = Project("migrations", file("migrations"))
   })
 
 lazy val datamodel = Project("datamodel", file("datamodel"))
-  .dependsOn(tool, bridge)
   .settings(commonSettings: _*)
   .settings(resolvers += Resolver.bintrayRepo("azavea", "geotrellis"))
   .settings({
@@ -261,145 +247,14 @@ lazy val datamodel = Project("datamodel", file("datamodel"))
       Dependencies.geotools,
       Dependencies.circeCore,
       Dependencies.circeGenericExtras,
+      Dependencies.circeOptics,
+      Dependencies.circeParser,
       Dependencies.akka,
       Dependencies.akkahttp,
       Dependencies.betterFiles,
       Dependencies.scalaCheck,
       Dependencies.circeTest,
       "com.lonelyplanet" %% "akka-http-extensions" % "0.4.15" % "test",
-    )
-  })
-
-lazy val batch = Project("batch", file("batch"))
-  .dependsOn(common, datamodel, tool, bridge, geotrellis)
-  .settings(commonSettings: _*)
-  .settings(resolvers += Resolver.bintrayRepo("azavea", "maven"))
-  .settings(resolvers += Resolver.bintrayRepo("azavea", "geotrellis"))
-  .settings({
-    libraryDependencies ++= testDependencies ++ Seq(
-      Dependencies.scalaLogging,
-      Dependencies.geotrellisSpark,
-      Dependencies.geotrellisS3,
-      Dependencies.geotrellisUtil,
-      Dependencies.geotrellisRaster,
-      Dependencies.akka,
-      Dependencies.akkahttp,
-      Dependencies.akkaHttpCors,
-      Dependencies.akkaCirceJson,
-      Dependencies.akkastream,
-      Dependencies.akkaSlf4j,
-      Dependencies.akkaSprayJson,
-      Dependencies.geotrellisSlick,
-      Dependencies.sparkCore,
-      Dependencies.hadoopAws,
-      Dependencies.awsSdk,
-      Dependencies.scopt,
-      Dependencies.ficus,
-      Dependencies.dnsJava,
-      Dependencies.dropbox,
-      Dependencies.caffeine,
-      Dependencies.scaffeine,
-      Dependencies.mamlJvm,
-      Dependencies.mamlSpark,
-      Dependencies.auth0,
-      Dependencies.catsEffect,
-      Dependencies.scalaCsv
-    )
-  })
-  .settings({
-    dependencyOverrides ++= Seq(
-      "com.fasterxml.jackson.core" % "jackson-core" % "2.9.2",
-      "com.fasterxml.jackson.core" % "jackson-databind" % "2.9.2",
-      "com.fasterxml.jackson.module" % "jackson-module-scala_2.11" % "2.9.2"
-    )
-  })
-  .settings(assemblyShadeRules in assembly := Seq(
-    ShadeRule.rename("shapeless.**" -> "com.azavea.shaded.shapeless.@1").inAll,
-    ShadeRule
-      .rename(
-        "com.amazonaws.services.s3.**" -> "com.azavea.shaded.amazonaws.services.s3.@1"
-      )
-      .inAll,
-    ShadeRule
-      .rename(
-        "com.amazonaws.**" -> "com.azavea.shaded.amazonaws.@1"
-      )
-      .inAll
-  ))
-
-import _root_.io.gatling.sbt.GatlingPlugin
-lazy val tile = Project("tile", file("tile"))
-  .dependsOn(datamodel,
-             common % "test->test;compile->compile",
-             authentication,
-             geotrellis)
-  .dependsOn(tool)
-  .enablePlugins(GatlingPlugin)
-  .settings(commonSettings: _*)
-  .settings({
-    libraryDependencies ++= loggingDependencies ++ testDependencies ++
-      metricsDependencies ++ Seq(
-      Dependencies.spark,
-      Dependencies.geotrellisSpark,
-      Dependencies.geotrellisS3,
-      Dependencies.akkaSprayJson,
-      Dependencies.akkaCirceJson,
-      Dependencies.akkaHttpCors,
-      Dependencies.akkastream,
-      Dependencies.akkaSlf4j,
-      Dependencies.circeCore % "it,test",
-      Dependencies.circeGeneric % "it,test",
-      Dependencies.circeParser % "it,test",
-      Dependencies.circeOptics % "it,test",
-      Dependencies.scalajHttp % "it,test",
-      Dependencies.gatlingApp,
-      Dependencies.gatlingTest,
-      Dependencies.gatlingHighcharts
-    )
-  })
-  .settings(assemblyMergeStrategy in assembly := {
-    case m if m.toLowerCase.endsWith("manifest.mf")     => MergeStrategy.discard
-    case m if m.toLowerCase.matches("meta-inf.*\\.sf$") => MergeStrategy.discard
-    case "reference.conf"                               => MergeStrategy.concat
-    case "application.conf"                             => MergeStrategy.concat
-    case n if n.endsWith(".SF") || n.endsWith(".RSA") || n.endsWith(".DSA") =>
-      MergeStrategy.discard
-    case PathList("META-INF", "aop.xml") => aopMerge
-    case _                               => MergeStrategy.first
-  })
-  .settings(assemblyJarName in assembly := "rf-tile-server.jar")
-  .settings(test in assembly := {})
-
-lazy val tool = Project("tool", file("tool"))
-  .dependsOn(bridge)
-  .settings(commonSettings: _*)
-  .settings(resolvers += Resolver.bintrayRepo("azavea", "maven"))
-  .settings({
-    libraryDependencies ++= loggingDependencies ++ Seq(
-      Dependencies.sparkCore,
-      Dependencies.geotrellisSpark,
-      Dependencies.geotrellisRaster,
-      Dependencies.geotrellisRasterTestkit,
-      Dependencies.shapeless,
-      Dependencies.scalatest,
-      Dependencies.circeCore,
-      Dependencies.circeGeneric,
-      Dependencies.circeParser,
-      Dependencies.circeOptics,
-      Dependencies.scalaCheck,
-      Dependencies.scalaz,
-      Dependencies.mamlJvm
-    )
-  })
-
-lazy val geotrellis = Project("geotrellis", file("geotrellis"))
-  .dependsOn(db, common, datamodel)
-  .settings(commonSettings: _*)
-  .settings({
-    libraryDependencies ++= Seq(
-      Dependencies.geotrellisRaster,
-      Dependencies.geotrellisSpark,
-      Dependencies.catsCore,
     )
   })
 
@@ -412,17 +267,5 @@ lazy val authentication = Project("authentication", file("authentication"))
       Dependencies.akka,
       Dependencies.akkahttp,
       Dependencies.akkaCirceJson
-    )
-  })
-
-lazy val bridge = Project("bridge", file("bridge"))
-  .settings(commonSettings: _*)
-  .settings({
-    libraryDependencies ++= loggingDependencies ++ Seq(
-      Dependencies.circeCore,
-      Dependencies.circeGeneric,
-      Dependencies.circeParser,
-      Dependencies.geotrellisVector,
-      Dependencies.scalaLogging
     )
   })

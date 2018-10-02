@@ -5,8 +5,8 @@ services:
     volumes:
       - ./data/:/tmp/data/
     env_file: .env
-    expose:
-      - "5432"
+    ports:
+      - "5432:5432"
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
       interval: 5s

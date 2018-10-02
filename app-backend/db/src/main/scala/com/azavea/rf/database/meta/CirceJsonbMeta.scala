@@ -77,122 +77,12 @@ trait CirceJsonbMeta {
       )
   }
 
-  implicit val thumbnailMeta: Meta[List[Thumbnail]] = {
-    Meta
-      .other[PGobject]("jsonb")
-      .xmap[List[Thumbnail]](
-        a =>
-          io.circe.parser
-            .parse(a.getValue)
-            .leftMap[Json](e => throw e)
-            .merge
-            .as[List[Thumbnail]] match {
-            case Right(p) => p
-            case Left(e)  => throw e
-        }, // failure raises an exception
-        a => {
-          val o = new PGobject
-          o.setType("jsonb")
-          o.setValue(a.asJson.noSpaces)
-          o
-        }
-      )
-  }
-
-  implicit val imageWithRelated: Meta[List[Image.WithRelated]] = {
-    Meta
-      .other[PGobject]("jsonb")
-      .xmap[List[Image.WithRelated]](
-        a =>
-          io.circe.parser
-            .parse(a.getValue)
-            .leftMap[Json](e => throw e)
-            .merge
-            .as[List[Image.WithRelated]] match {
-            case Right(p) => p
-            case Left(e)  => throw e
-        }, // failure raises an exception
-        a => {
-          val o = new PGobject
-          o.setType("jsonb")
-          o.setValue(a.asJson.noSpaces)
-          o
-        }
-      )
-  }
-
-  implicit val bandMeta: Meta[List[Band]] = {
-    Meta
-      .other[PGobject]("jsonb")
-      .xmap[List[Band]](
-        a =>
-          io.circe.parser
-            .parse(a.getValue)
-            .leftMap[Json](e => throw e)
-            .merge
-            .as[List[Band]] match {
-            case Right(p) => p
-            case Left(e)  => throw e
-        }, // failure raises an exception
-        a => {
-          val o = new PGobject
-          o.setType("jsonb")
-          o.setValue(a.asJson.noSpaces)
-          o
-        }
-      )
-  }
-
   implicit val uriMeta: Meta[URI] = {
     Meta
       .other[String]("text")
       .xmap[URI](
         a => new URI(a),
         a => a.toString
-      )
-  }
-
-  implicit val PlatformPublicSettingsMeta: Meta[Platform.PublicSettings] = {
-    Meta
-      .other[PGobject]("jsonb")
-      .xmap[Platform.PublicSettings](
-        a =>
-          io.circe.parser
-            .parse(a.getValue)
-            .leftMap[Json](e => throw e)
-            .merge
-            .as[Platform.PublicSettings] match {
-            case Right(p) => p
-            case Left(e)  => throw e
-        },
-        a => {
-          val o = new PGobject
-          o.setType("jsonb")
-          o.setValue(a.asJson.noSpaces)
-          o
-        }
-      )
-  }
-
-  implicit val PlatformPrivateSettingsMeta: Meta[Platform.PrivateSettings] = {
-    Meta
-      .other[PGobject]("jsonb")
-      .xmap[Platform.PrivateSettings](
-        a =>
-          io.circe.parser
-            .parse(a.getValue)
-            .leftMap[Json](e => throw e)
-            .merge
-            .as[Platform.PrivateSettings] match {
-            case Right(p) => p
-            case Left(e)  => throw e
-        },
-        a => {
-          val o = new PGobject
-          o.setType("jsonb")
-          o.setValue(a.asJson.noSpaces)
-          o
-        }
       )
   }
 

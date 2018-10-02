@@ -35,19 +35,11 @@ trait UserRoutes
 
   val userRoutes: Route = handleExceptions(userExceptionHandler) {
     pathPrefix("me") {
-      pathPrefix("teams") {
-        pathEndOrSingleSlash {
-          get { getUserTeams }
-        }
-      } ~
-        pathPrefix("roles") {
-          get { getUserRoles }
-        } ~
-        pathEndOrSingleSlash {
-          get { getAuth0User } ~
-            patch { updateAuth0User } ~
-            put { updateOwnUser }
-        }
+      pathEndOrSingleSlash {
+        get { getAuth0User } ~
+          patch { updateAuth0User } ~
+          put { updateOwnUser }
+      }
     } ~
       pathPrefix("dropbox-setup") {
         pathEndOrSingleSlash {
@@ -61,8 +53,7 @@ trait UserRoutes
       } ~
       pathPrefix(Segment) { authIdEncoded =>
         pathEndOrSingleSlash {
-          get { getUserByEncodedAuthId(authIdEncoded) } ~
-            put { updateUserByEncodedAuthId(authIdEncoded) }
+          get { getUserByEncodedAuthId(authIdEncoded) }
         }
       }
   }
@@ -146,28 +137,6 @@ trait UserRoutes
           complete(StatusCodes.NotFound)
         }
       }
-  }
-
-  def getUserTeams: Route = authenticate { user =>
-    complete { TeamDao.teamsForUser(user).transact(xa).unsafeToFuture }
-  }
-  def updateUserByEncodedAuthId(authIdEncoded: String): Route =
-    authenticateSuperUser { root =>
-      entity(as[User]) { updatedUser =>
-        onSuccess(
-          UserDao
-            .updateUser(updatedUser, authIdEncoded)
-            .transact(xa)
-            .unsafeToFuture()) {
-          completeSingleOrNotFound
-        }
-      }
-    }
-
-  def getUserRoles: Route = authenticate { user =>
-    complete {
-      UserGroupRoleDao.listByUser(user).transact(xa).unsafeToFuture()
-    }
   }
 
   def searchUsers: Route = authenticate { user =>
