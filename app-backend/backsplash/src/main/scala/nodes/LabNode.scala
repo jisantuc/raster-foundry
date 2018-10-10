@@ -101,14 +101,18 @@ object LabNode extends RollbarNotifier with HistogramJsonFormats {
       def extentReification(self: LabNode)(
           implicit t: Timer[IO]): (Extent, CellSize) => IO[Literal] =
         (extent: Extent, cs: CellSize) => {
+          logger.info(
+            s"In MamlExtentReification extentReification with extent ${extent}")
           val mdIO =
-            Mosaic.getMosaicDefinitions(self.toProjectNode, Some(extent))
+            Mosaic.getMosaicDefinitions(self.toProjectNode, None // Some(extent)
+            )
           for {
             mds <- mdIO
             // figure out how to get the correct band?
             // this doesn't work ATM because the function's gone
             tiff <- CogUtils.fromUri(mds.head.ingestLocation.get) // TODO use mosaic def here
           } yield {
+            logger.info(s"${tiff.toString}")
             val b = CogUtils.cropGeoTiffToTile(tiff, extent, cs, 0)
             RasterLit(Raster(b, extent))
           }
@@ -119,6 +123,7 @@ object LabNode extends RollbarNotifier with HistogramJsonFormats {
     new HasRasterExtents[LabNode] {
       def rasterExtents(self: LabNode)(
           implicit t: Timer[IO]): IO[NEL[RasterExtent]] = {
+        logger.info("In HasRasterExtents rasterExtents")
         val mdIO = Mosaic.getMosaicDefinitions(self.toProjectNode)
         for {
           mds <- mdIO
