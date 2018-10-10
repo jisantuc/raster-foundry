@@ -42,15 +42,24 @@ object ServerStream {
         maxAge = 1800
       )
     )
-  def analysisService = new AnalysisService().service
+  def analysisService =
+    CORS(
+      Authenticators.queryParamAuthMiddleware(new AnalysisService().service),
+      CORSConfig(
+        anyOrigin = true,
+        anyMethod = false,
+        allowedMethods = Some(Set("GET", "POST", "HEAD", "OPTIONS")),
+        allowedHeaders = Some(Set("Content-Type", "Authorization", "*")),
+        allowCredentials = true,
+        maxAge = 1800
+      )
+    )
 
   def stream =
     BlazeBuilder[IO]
       .bindHttp(8080, "0.0.0.0")
       .mountService(AutoSlash(mosaicService), "/")
       .mountService(AutoSlash(healthCheckService), "/healthcheck")
-      .mountService(
-        AutoSlash(Authenticators.queryParamAuthMiddleware(analysisService)),
-        "/tools")
+      .mountService(AutoSlash(analysisService), "/tools")
       .serve
 }

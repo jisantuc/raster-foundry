@@ -90,8 +90,8 @@ class AnalysisService(
 
   val service: AuthedService[User, IO] =
     AuthedService {
-      case GET -> Root / UUIDWrapper(analysisId) / histogram /
-            :? NodeQueryParamMatcher (node)
+      case GET -> Root / UUIDWrapper(analysisId) / histogram
+            :? NodeQueryParamMatcher(node)
             :? VoidCacheQueryParamMatcher(void) as user => {
 
         logger.info(

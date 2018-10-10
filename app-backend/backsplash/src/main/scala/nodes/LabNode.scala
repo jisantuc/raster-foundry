@@ -105,7 +105,9 @@ object LabNode extends RollbarNotifier with HistogramJsonFormats {
             Mosaic.getMosaicDefinitions(self.toProjectNode, Some(extent))
           for {
             mds <- mdIO
-            tiff <- CogUtils.getTiff(mds.head.ingestLocation.toString) // TODO use mosaic def here
+            // figure out how to get the correct band?
+            // this doesn't work ATM because the function's gone
+            tiff <- CogUtils.fromUri(mds.head.ingestLocation.get) // TODO use mosaic def here
           } yield {
             val b = CogUtils.cropGeoTiffToTile(tiff, extent, cs, 0)
             RasterLit(Raster(b, extent))
@@ -120,7 +122,7 @@ object LabNode extends RollbarNotifier with HistogramJsonFormats {
         val mdIO = Mosaic.getMosaicDefinitions(self.toProjectNode)
         for {
           mds <- mdIO
-          tiff <- CogUtils.getTiff(mds.head.ingestLocation.toString)
+          tiff <- CogUtils.fromUri(mds.head.ingestLocation.get)
         } yield {
           NEL(tiff.rasterExtent, tiff.overviews.map(_.rasterExtent))
         }
@@ -130,7 +132,7 @@ object LabNode extends RollbarNotifier with HistogramJsonFormats {
         val mdIO = Mosaic.getMosaicDefinitions(self.toProjectNode)
         for {
           mds <- mdIO
-          tiff <- CogUtils.getTiff(mds.head.ingestLocation.toString)
+          tiff <- CogUtils.fromUri(mds.head.ingestLocation.get)
         } yield {
           tiff.crs
         }
