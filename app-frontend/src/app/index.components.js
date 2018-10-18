@@ -116,6 +116,7 @@ export default angular.module('index.components', [
     require('./components/colorComposites/bandSelect/bandSelect.js').default.name,
 
     // histogram components
+    require('./components/histogram/d3Container/d3Container.js').default.name,
     require('./components/histogram/channelHistogram/channelHistogram.module.js').default.name,
     require('./components/histogram/nodeHistogram/nodeHistogram.module.js').default.name,
     require('./components/histogram/histogramBreakpoint/histogramBreakpoint.module.js').default.name,
