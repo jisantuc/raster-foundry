@@ -43,39 +43,7 @@
      ng-disabled="$ctrl.isSource"
      ng-attr-title="{{$ctrl.isSource && 'Cannot adjust previews for inputs'}}"
 >
-  <svg ng-attr-id="{{$ctrl.graphId}}" height="120px" width="100%"></svg>
-  <!-- <nvd3 ng-attr-id="chart-{{$ctrl.nodeId}}" -->
-  <!-- style="height: 101px;" -->
-  <!-- options="$ctrl.histOptions" -->
-  <!-- data="$ctrl.plot" -->
-  <!-- api="$ctrl.api"></nvd3> -->
-  <!-- <div style="height: 100px;" ng-if="!$ctrl.plot"></div> -->
-  <!-- <rf-histogram-breakpoint -->
-  <!-- ng-if="$ctrl.plot && bp.options.style !== 'hidden' && !$ctrl.isSource" -->
-  <!-- ng-repeat="bp in $ctrl.breakpoints track by bp.id" -->
-  <!-- ng-mouseover="$ctrl.onBpMouseover(bp)" -->
-  <!-- ng-class="{'active': $ctrl.lastMouseOver === bp.id}" -->
-  <!-- data-color="bp.color" -->
-  <!-- data-breakpoint="bp.value" -->
-  <!-- data-range="$ctrl.options.viewRange" -->
-  <!-- data-precision="$ctrl.precision" -->
-  <!-- data-options="bp.options" -->
-  <!-- on-breakpoint-change="$ctrl.debouncedBreakpointChange(bp, breakpoint)" -->
-  <!-- ></rf-histogram-breakpoint> -->
-  <!-- <rf-histogram-breakpoint -->
-  <!-- ng-if="$ctrl.isSource" -->
-  <!-- data-breakpoint="$ctrl.options.dataRange.min" -->
-  <!-- data-range="$ctrl.options.dataRange" -->
-  <!-- data-precision="$ctrl.precision" -->
-  <!-- > -->
-  <!-- </rf-histogram-breakpoint> -->
-  <!-- <rf-histogram-breakpoint -->
-  <!-- ng-if="$ctrl.isSource" -->
-  <!-- data-breakpoint="$ctrl.options.dataRange.max" -->
-  <!-- data-range="$ctrl.options.dataRange" -->
-  <!-- data-precision="$ctrl.precision" -->
-  <!-- > -->
-  <!-- </rf-histogram-breakpoint> -->
+  <svg ng-attr-id="graph-{{$ctrl.graphId}}" height="120px" width="100%"></svg>
   <div class="histogram-placeholder" ng-if="$ctrl.histogram.fetching">
     <span class="icon-load animate-spin" ng-class="{'stop': !$ctrl.histogram.fetching}"></span>
       Loading
@@ -88,11 +56,11 @@
   </div>
 </div>
 
-<style ng-if="$ctrl.nodeId">
- #chart-{{$ctrl.nodeId}} .nv-series-0 {
-   fill: url(#line-gradient-{{$ctrl.nodeId}}) !important;
+<style ng-if="$ctrl.graph">
+ #graph-{{$ctrl.graphId}} .data-fill {
+   fill: url(#line-gradient-{{$ctrl.graphId}}) !important;
    fill-opacity: 1 !important;
-   stroke: url(#line-gradient-{{$ctrl.nodeId}}) !important;
+   stroke: url(#line-gradient-{{$ctrl.graphId}}) !important;
    stroke-opacity: 1 !important;
  }
 </style>

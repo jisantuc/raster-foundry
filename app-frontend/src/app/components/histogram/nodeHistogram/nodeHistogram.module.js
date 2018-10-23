@@ -64,15 +64,19 @@ class NodeHistogramController {
 
         this.debouncedBreakpointChange = _.debounce(this.onBreakpointChange.bind(this), 500);
         // once histogram and render definitions are initialized, plot data
-        this.$scope.$watch('$ctrl.histogram', histogram => {
-            if (histogram && histogram.data && this.renderDefinition) {
-                this.createPlotFromHistogram(histogram);
-                this.getGraph().then((graph) => graph.setData(this.plot));
-            }
-            if (!histogram && this.plot) {
-                delete this.plot;
-                this.getGraph().then((graph) => graph.setData());
-            }
+        this.getGraph().then((graph) => {
+            this.$scope.$watch('$ctrl.histogram', histogram => {
+                if (histogram && histogram.data && this.renderDefinition) {
+                    this.createPlotFromHistogram(histogram);
+                     graph.setData({
+                        histogram: this.plot, breakpoints: this.breakpoints
+                    });
+                }
+                if (!histogram && this.plot) {
+                    delete this.plot;
+                    graph.setData();
+                }
+            });
         });
         // re-fetch histogram any time there's a hard update
         this.$scope.$watch('$ctrl.lastAnalysisRefresh', () => {
@@ -85,7 +89,7 @@ class NodeHistogramController {
                     rdef, this.uuid4.generate
                 );
                 if (this.graph) {
-                    this.graph.update();
+                    this.graph.setData({histogram: this.plot, breakpoints: this.breakpoints});
                 }
             } else if (rdef) {
                 renderDefWatch();
@@ -238,14 +242,11 @@ class NodeHistogramController {
             });
         }
 
-        this.plot = [{
-            values: plot,
-            key: 'Value',
-            area: true}];
+        this.plot = plot;
     }
 
     updateHistogramColors() {
-        if (!this.api.getElement) {
+        if (!this.graph) {
             return;
         }
 
@@ -374,7 +375,7 @@ class NodeHistogramController {
             });
         }
         if (this.graph) {
-            this.graph.update();
+            this.graph.setData({histogram: this.plot, breakpoints: this.breakpoints});
         }
         let {nodeId, breakpoints, options} = this;
         let renderDefinition = renderDefinitionFromState(options, breakpoints);
@@ -413,7 +414,7 @@ class NodeHistogramController {
         });
 
         if (this.graph) {
-            this.graph.update();
+            this.graph.setData({histogram: this.plot, breakpoints: this.breakpoints});
         }
 
         let renderDefinition = renderDefinitionFromState(this.options, this.breakpoints);
@@ -437,7 +438,7 @@ class NodeHistogramController {
         let renderDefinition = renderDefinitionFromState(this.options, this.breakpoints);
 
         if (this.graph) {
-            this.graph.update();
+            this.graph.setData({histogram: this.plot, breakpoints: this.breakpoints});
         }
 
         this.updateRenderDefinition({
@@ -485,7 +486,7 @@ class NodeHistogramController {
             let renderDefinition = renderDefinitionFromState(this.options, this.breakpoints);
 
             if (this.graph) {
-                this.graph.update();
+                this.graph.setData({histogram: this.plot, breakpoints: this.breakpoints});
             }
 
             this.updateRenderDefinition({
