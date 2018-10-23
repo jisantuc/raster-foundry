@@ -1,4 +1,5 @@
 import angular from 'angular';
+import $ from 'jquery';
 import _ from 'lodash';
 import * as d3 from 'd3';
 import {Map} from 'immutable';
@@ -20,16 +21,12 @@ const NodeHistogram = {
 
 class NodeHistogramController {
     constructor(
-        $log, $scope, $element, $ngRedux, uuid4,
-        histogramService, colorSchemeService, modalService
+        $log, $rootScope, $scope, $element, $ngRedux,
+        uuid4, histogramService, colorSchemeService,
+        modalService, graphService
     ) {
         'ngInject';
-        this.$log = $log;
-        this.$scope = $scope;
-        this.$element = $element;
-        this.histogramService = histogramService;
-        this.uuid4 = uuid4;
-        this.modalService = modalService;
+        $rootScope.autoInject(this, arguments);
 
         let unsubscribe = $ngRedux.connect(
             this.mapStateToThis.bind(this),
@@ -40,19 +37,6 @@ class NodeHistogramController {
         this.defaultColorScheme = colorSchemeService.defaultColorSchemes.find(
             s => s.label === 'Viridis'
         );
-
-        const renderDefWatch = $scope.$watch('$ctrl.renderDefinition', (rdef) => {
-            if (!this.breakpoints.length && rdef) {
-                this.breakpoints = breakpointsFromRenderDefinition(
-                    rdef, this.uuid4.generate
-                );
-                if (this.api.refresh) {
-                    this.api.refresh();
-                }
-            } else if (rdef) {
-                renderDefWatch();
-            }
-        });
     }
 
     mapStateToThis(state) {
@@ -60,7 +44,7 @@ class NodeHistogramController {
         let nodeMetadata = node && node.metadata;
         let renderDefinition = nodeMetadata && nodeMetadata.renderDefinition;
         let histogramOptions = nodeMetadata && nodeMetadata.histogramOptions;
-        let isSource = node.type && node.type.toLowerCase().includes('src');
+        let isSource = node && node.type && node.type.toLowerCase().includes('src');
         return {
             analysis: state.lab.analysis,
             analysisErrors: state.lab.analysisErrors,
@@ -75,6 +59,51 @@ class NodeHistogramController {
     }
 
     $onInit() {
+        this.graphId = this.uuid4.generate();
+        this.getGraph = () => this.graphService.getGraph(this.graphId);
+
+        this.debouncedBreakpointChange = _.debounce(this.onBreakpointChange.bind(this), 500);
+        // once histogram and render definitions are initialized, plot data
+        this.$scope.$watch('$ctrl.histogram', histogram => {
+            if (histogram && histogram.data && this.renderDefinition) {
+                this.createPlotFromHistogram(histogram);
+                this.getGraph().then((graph) => graph.setData(this.plot));
+            }
+            if (!histogram && this.plot) {
+                delete this.plot;
+                this.getGraph().then((graph) => graph.setData());
+            }
+        });
+        // re-fetch histogram any time there's a hard update
+        this.$scope.$watch('$ctrl.lastAnalysisRefresh', () => {
+            this.fetchHistogram(this.nodeId);
+        });
+
+        const renderDefWatch = this.$scope.$watch('$ctrl.renderDefinition', (rdef) => {
+            if ((!this.breakpoints || !this.breakpoints.length) && rdef) {
+                this.breakpoints = breakpointsFromRenderDefinition(
+                    rdef, this.uuid4.generate
+                );
+                if (this.graph) {
+                    this.graph.update();
+                }
+            } else if (rdef) {
+                renderDefWatch();
+            }
+        });
+    }
+
+    $postLink() {
+        this.$scope.$evalAsync(() => this.initGraph());
+    }
+
+    $onDestroy() {
+        if (this.graph) {
+            this.graphService.deregister(this.graph.id);
+        }
+    }
+
+    initGraph() {
         this.options = {
             dataRange: {
                 min: 0,
@@ -116,62 +145,25 @@ class NodeHistogramController {
             this.breakpoints = Object.assign([]);
         }
 
-        this.histOptions = {
-            chart: {
-                type: 'lineChart',
-                showLegend: false,
-                showXAxis: false,
-                showYAxis: false,
-                yScale: d3.scale.log(),
-                margin: {
-                    top: 0,
-                    right: 0,
-                    bottom: 0,
-                    left: 0
-                },
-                height: 100,
-                xAxis: {
-                    showLabel: false
-                },
-                yAxis: {
-                    showLabel: false
-                },
-                tooltip: {
-                    enabled: false
-                },
-                interpolate: 'step',
-                dispatch: {
-                    renderEnd: () => {
-                        this.updateHistogramColors();
-                    }
-                }
-            }
-        };
+        // this.histOptions = {
+        //     type: 'SinglebandHistogram',
+        //     yScale: d3.scaleLog(),
+        //     margin: {
+        //         top: 0,
+        //         right: 0,
+        //         bottom: 0,
+        //         left: 0
+        //     },
+        //     height: 100,
+        //     dispatch: {
+        //         renderEnd: () => {
+        //             this.updateHistogramColors();
+        //         }
+        //     }
+        // };
 
-        let finishWaitingForGraphApi = this.$scope.$watch('$ctrl.api', (api) => {
-            if (api.refresh) {
-                this.refreshHistogram = _.throttle(this.api.refresh, 100);
-                finishWaitingForGraphApi();
-                this.refreshHistogram();
-            }
-        });
-
-        this.api = {};
-
-        this.debouncedBreakpointChange = _.debounce(this.onBreakpointChange.bind(this), 500);
-        // once histogram and render definitions are initialized, plot data
-        this.$scope.$watch('$ctrl.histogram', histogram => {
-            if (histogram && histogram.data && this.renderDefinition) {
-                this.createPlotFromHistogram(histogram);
-            }
-            if (!histogram && this.plot) {
-                delete this.plot;
-            }
-        });
-        // re-fetch histogram any time there's a hard update
-        this.$scope.$watch('$ctrl.lastAnalysisRefresh', () => {
-            this.fetchHistogram(this.nodeId);
-        });
+        let elem = $(this.$element[0]).find('.graph-container svg')[0];
+        this.graph = this.graphService.register(elem, this.graphId, this.options);
     }
 
     roundToPrecision(val, precision) {
@@ -381,7 +373,9 @@ class NodeHistogramController {
                 return Object.assign({}, bp);
             });
         }
-        this.api.refresh();
+        if (this.graph) {
+            this.graph.update();
+        }
         let {nodeId, breakpoints, options} = this;
         let renderDefinition = renderDefinitionFromState(options, breakpoints);
         let histogramOptions = Object.assign({}, this.histogramOptions, {
@@ -417,7 +411,10 @@ class NodeHistogramController {
                 max: maskChanged === 'max' ? value : this.options.masks.max
             }
         });
-        this.api.refresh();
+
+        if (this.graph) {
+            this.graph.update();
+        }
 
         let renderDefinition = renderDefinitionFromState(this.options, this.breakpoints);
         this.updateRenderDefinition({nodeId: this.nodeId, renderDefinition});
@@ -439,7 +436,9 @@ class NodeHistogramController {
         });
         let renderDefinition = renderDefinitionFromState(this.options, this.breakpoints);
 
-        this.api.refresh();
+        if (this.graph) {
+            this.graph.update();
+        }
 
         this.updateRenderDefinition({
             nodeId: this.nodeId,
@@ -485,7 +484,9 @@ class NodeHistogramController {
             });
             let renderDefinition = renderDefinitionFromState(this.options, this.breakpoints);
 
-            this.api.refresh();
+            if (this.graph) {
+                this.graph.update();
+            }
 
             this.updateRenderDefinition({
                 nodeId: this.nodeId,
