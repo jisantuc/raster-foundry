@@ -848,7 +848,7 @@ calendar .board .day.range-start:not(.other-month):not(.disabled) {
   box-shadow: 4px 4px 4px rgba(0,0,0,0.25);
 }
 
-div.lab-workspace svg {
+div.lab-workspace > svg {
   cursor: grab;
 }
 
