@@ -4,6 +4,20 @@ import {Map, Set} from 'immutable';
 import * as d3 from 'd3';
 import $ from 'jquery';
 
+const defaultD3Options = (el) => ({
+    style: {
+        height: '100px'
+    },
+    height: 100,
+    width: el.clientWidth || 100,
+    margin: {
+        top: 5,
+        bottom: 5,
+        left: 0,
+        right: 0
+    }
+});
+
 class D3Element {
     constructor(el, id, options, $q) {
         this.el = el;
@@ -12,19 +26,7 @@ class D3Element {
         this.$q = $q;
         this.callbacks = new Map();
 
-        this.options = Object.assign({
-            style: {
-                height: '120px'
-            },
-            height: 120,
-            width: this.el.clientWidth || 100,
-            margin: {
-                top: 5,
-                bottom: 5,
-                left: 0,
-                right: 0
-            }
-        }, options);
+        this.options = Object.assign({}, defaultD3Options(el), options);
 
         this.initSvg();
     }
@@ -35,24 +37,24 @@ class D3Element {
             height: this.options.style.height,
             width: '100%'
         });
+        return this;
     }
 
     setData(data) {
         this.data = data;
-        this.update();
         return this;
     }
 
-    update() {
-        this.render();
+    setOptions(options) {
+        this.options = Object.assign(defaultD3Options(this.el), options);
+        return this;
     }
 
     render() {
         this.callbacks.forEach((callback) => {
             callback();
         });
-
-        console.log('rendering D3Element');
+        return this;
     }
 }
 
@@ -61,64 +63,56 @@ class SinglebandHistogram extends D3Element {
         super(el, id, options, $q);
     }
 
-    update() {
-        // update all variables related to rendering and render
-        super.update();
-    }
-
     render() {
         // render d3 el
-        console.log('rendering single band histogram');
-
         let svg = d3.select(this.el);
         let defs = svg.select('defs');
-        if (!defs[0] || !defs[0].length) {
+        if (!defs.nodes().length) {
             defs = svg.append('defs');
         }
 
         if (this.data && this.data.histogram && this.data.breakpoints) {
-            console.log('rendering with data:', this.data, this.options);
-
             this.calculateAxis(svg, defs);
             this.renderData(svg, defs);
             this.renderGradient(svg, defs);
-
-        } else {
-            console.log('Render called with no data');
         }
 
-        super.render();
+        return super.render();
     }
 
     calculateAxis(svg, defs) {
-        console.log('rendering axis', this.options);
         const xRange = [this.options.margin.left,
                         this.el.clientWidth - this.options.margin.right];
-        console.log('range = ', xRange);
         this.xScale = d3.scaleLinear()
             .domain([d3.min(this.data.histogram, d => d.x),
                      d3.max(this.data.histogram, d => d.x)])
             .range(xRange);
-
-        this.yScale = d3.scaleLinear()
-            .domain([0, d3.max(this.data.histogram, d => d.y)])
+        let logScale = d3.scaleLog()
+            .domain([0.01, d3.max(this.data.histogram, d => d.y)])
             .nice()
             .range([this.options.height - this.options.margin.bottom,
                     this.options.margin.top]);
+        this.yScale = (x) => logScale(x > 0 ? x : 0.01);
     }
 
     renderData(svg, defs) {
-        // let line = d3.line()
-        //     .x(v => this.xScale(v.x))
-        //     .y(v => this.yScale(v.y))
-        //     .curve(d3.curveStepAfter);
-        // svg.append('path')
-        //     .datum(this.data.histogram)
-        //     .attr('fill', 'none')
-        //     .attr('stroke', 'steelblue')
-        //     .attr('stroke-width', '1.5')
-        //     .attr('d', line);
+        let areaShadow = d3.area()
+            .x(v => this.xScale(v.x))
+            .y0(this.options.height - this.options.margin.bottom)
+            .y1(v => this.yScale(v.y))
+            .curve(d3.curveStepAfter);
 
+        let shadowPath = svg.select('#shadow-path');
+        if (!shadowPath.nodes().length) {
+            shadowPath = svg.append('path');
+        }
+
+        shadowPath.data([this.data.histogram])
+            .attr('id', 'shadow-path')
+            .attr('z-index', 10)
+            .attr('fill', 'rgba(1,1,1,0.15)')
+            .attr('stroke', 'rgba(1,1,1,0.25)')
+            .attr('d', areaShadow);
 
         let area = d3.area()
             .x(v => this.xScale(v.x))
@@ -126,27 +120,37 @@ class SinglebandHistogram extends D3Element {
             .y1(v => this.yScale(v.y))
             .curve(d3.curveStepAfter);
 
-        svg.append('path')
-            .data([this.data.histogram])
+
+        let areaPath = svg.select('#area-path');
+        if (!areaPath.nodes().length) {
+            areaPath = svg.append('path');
+        }
+
+        areaPath.data([this.data.histogram])
+            .attr('id', 'area-path')
             .attr('class', 'data-fill')
+            .attr('z-index', 11)
             .attr('d', area);
     }
 
     renderGradient(svg, defs) {
-        let linearGradient = defs.selectAll('linearGradient');
-        if (!linearGradient[0] || !linearGradient[0].length) {
+        let linearGradient = svg.selectAll('linearGradient');
+        if (!linearGradient.nodes().length) {
             linearGradient = defs.append('linearGradient');
+            linearGradient.attr('id', `line-gradient-${this.id}`)
+                .attr('gradientUnits', 'userSpaceOnUse')
+                .attr('x1', '0%').attr('y1', 0)
+                .attr('x2', '100%').attr('y2', 0);
         }
 
         let colorData = this.calculateGradientColors();
 
-        linearGradient.attr('id', `line-gradient-${this.id}`)
-            .attr('gradientUnits', 'userSpaceOnUse')
-            .attr('x1', '0%').attr('y1', 0)
-            .attr('x2', '100%').attr('y2', 0)
-            .selectAll('stop')
+        linearGradient.selectAll('stop')
+            .data([]).exit().remove();
+        linearGradient.selectAll('stop')
             .data(colorData)
-            .enter().append('stop')
+            .enter()
+            .append('stop')
             .attr('offset', (d) => d.offset)
             .attr('stop-color', (d) => d.color)
             .attr('stop-opacity', (d) => Number.isFinite(d.opacity) ? d.opacity : 1.0);
@@ -162,6 +166,16 @@ class SinglebandHistogram extends D3Element {
         }).sort((a, b) => a.offset - b.offset).map((bp) => {
             return {offset: `${bp.offset}%`, color: bp.color};
         });
+
+        if (this.options.baseScheme && this.options.baseScheme.colorBins > 0) {
+            let offsetData = data.map((currentValue, index, array) => {
+                if (index !== array.length - 1) {
+                    return {offset: array[index + 1].offset, color: currentValue.color};
+                }
+                return currentValue;
+            });
+            data = _.flatten(_.zip(data, offsetData));
+        }
 
         if (_.get(this.options, 'masks.min') || this.options.discrete) {
             let last = _.last(data);

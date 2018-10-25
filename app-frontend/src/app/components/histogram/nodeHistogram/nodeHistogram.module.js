@@ -28,12 +28,6 @@ class NodeHistogramController {
         'ngInject';
         $rootScope.autoInject(this, arguments);
 
-        let unsubscribe = $ngRedux.connect(
-            this.mapStateToThis.bind(this),
-            Object.assign({}, LabActions, HistogramActions)
-        )(this);
-        $scope.$on('$destroy', unsubscribe);
-
         this.defaultColorScheme = colorSchemeService.defaultColorSchemes.find(
             s => s.label === 'Viridis'
         );
@@ -59,6 +53,12 @@ class NodeHistogramController {
     }
 
     $onInit() {
+        let unsubscribe = this.$ngRedux.connect(
+            this.mapStateToThis.bind(this),
+            Object.assign({}, LabActions, HistogramActions)
+        )(this);
+        this.$scope.$on('$destroy', unsubscribe);
+
         this.graphId = this.uuid4.generate();
         this.getGraph = () => this.graphService.getGraph(this.graphId);
 
@@ -68,13 +68,13 @@ class NodeHistogramController {
             this.$scope.$watch('$ctrl.histogram', histogram => {
                 if (histogram && histogram.data && this.renderDefinition) {
                     this.createPlotFromHistogram(histogram);
-                     graph.setData({
-                        histogram: this.plot, breakpoints: this.breakpoints
-                    });
+                    graph.setData({histogram: this.plot, breakpoints: this.breakpoints})
+                        .setOptions(this.options)
+                        .render();
                 }
                 if (!histogram && this.plot) {
                     delete this.plot;
-                    graph.setData();
+                    graph.setData().render();
                 }
             });
         });
@@ -89,7 +89,9 @@ class NodeHistogramController {
                     rdef, this.uuid4.generate
                 );
                 if (this.graph) {
-                    this.graph.setData({histogram: this.plot, breakpoints: this.breakpoints});
+                    this.graph
+                        .setData({histogram: this.plot, breakpoints: this.breakpoints})
+                        .render();
                 }
             } else if (rdef) {
                 renderDefWatch();
@@ -148,23 +150,6 @@ class NodeHistogramController {
         } else {
             this.breakpoints = Object.assign([]);
         }
-
-        // this.histOptions = {
-        //     type: 'SinglebandHistogram',
-        //     yScale: d3.scaleLog(),
-        //     margin: {
-        //         top: 0,
-        //         right: 0,
-        //         bottom: 0,
-        //         left: 0
-        //     },
-        //     height: 100,
-        //     dispatch: {
-        //         renderEnd: () => {
-        //             this.updateHistogramColors();
-        //         }
-        //     }
-        // };
 
         let elem = $(this.$element[0]).find('.graph-container svg')[0];
         this.graph = this.graphService.register(elem, this.graphId, this.options);
@@ -245,76 +230,6 @@ class NodeHistogramController {
         this.plot = plot;
     }
 
-    updateHistogramColors() {
-        if (!this.graph) {
-            return;
-        }
-
-        let colors = this.calculateHistogramColors();
-
-        this.updateHistogramGradient(colors);
-    }
-
-    calculateHistogramColors() {
-        let range = this.options.viewRange.max - this.options.viewRange.min;
-        let data = this.breakpoints.map((bp) => {
-            let offset = (bp.value - this.options.viewRange.min) / range * 100;
-            return {offset: offset, color: bp.color};
-        }).sort((a, b) => a.offset - b.offset).map((bp) => {
-            return {offset: `${bp.offset}%`, color: bp.color};
-        });
-
-        if (this.options.baseScheme && this.options.baseScheme.colorBins > 0) {
-            let offsetData = data.map((currentValue, index, array) => {
-                if (index !== array.length - 1) {
-                    return {offset: array[index + 1].offset, color: currentValue.color};
-                }
-                return currentValue;
-            });
-            data = _.flatten(_.zip(data, offsetData));
-        }
-
-        if (this.options.masks.min || this.options.discrete) {
-            let last = _.last(data);
-            if (last.color === 'NODATA' || !this.options.discrete) {
-                data.splice(0, 0, {offset: data[0].offset, color: '#353C58'});
-                data.splice(0, 0, {offset: data[0].offset, color: '#353C58'});
-            } else {
-                data.splice(0, 0, {offset: data[0].offset, color: _.first(data.color)});
-                data.splice(0, 0, {offset: data[0].offset, color: last.color});
-            }
-        }
-        if (this.options.masks.max || this.options.discrete) {
-            let last = _.last(data);
-            if (last.color === 'NODATA' || !this.options.discrete) {
-                data.push({offset: _.last(data).offset, color: '#353C58'});
-                data.push({offset: _.last(data).offset, color: '#353C58'});
-            } else {
-                data.push({offset: _.last(data).offset, color: last.color});
-            }
-        }
-        return data;
-    }
-
-    updateHistogramGradient(data) {
-        let svg = d3.select(this.api.getElement().children()[0]);
-        let defs = svg.select('defs')[0].length ? svg.select('defs') : svg.append('defs');
-        let linearGradient = defs.selectAll('linearGradient')[0].length ?
-            defs.selectAll('linearGradient') : defs.append('linearGradient');
-
-        linearGradient.attr('id', `line-gradient-${this.nodeId}`)
-            .attr('gradientUnits', 'userSpaceOnUse')
-            .attr('x1', '0%').attr('y1', 0)
-            .attr('x2', '100%').attr('y2', 0)
-            .selectAll('stop')
-            .data(data)
-            .enter().append('stop')
-            .attr('offset', (d) => d.offset)
-            .attr('stop-color', (d) => d.color)
-            .attr('stop-opacity', (d) => Number.isFinite(d.opacity) ? d.opacity : 1.0);
-        this.$scope.$evalAsync();
-    }
-
     rescaleInnerBreakpoints(breakpoint, value) {
         let minBreakpoint = this.breakpoints.reduce((min, current) => {
             if (!min.value) {
@@ -374,15 +289,19 @@ class NodeHistogramController {
                 return Object.assign({}, bp);
             });
         }
-        if (this.graph) {
-            this.graph.setData({histogram: this.plot, breakpoints: this.breakpoints});
-        }
         let {nodeId, breakpoints, options} = this;
         let renderDefinition = renderDefinitionFromState(options, breakpoints);
         let histogramOptions = Object.assign({}, this.histogramOptions, {
             range: this.options.breakpointRange
         });
         this.updateRenderDefinition({nodeId, renderDefinition, histogramOptions});
+        if (this.graph) {
+            this.graph
+                .setData({histogram: this.plot, breakpoints: this.breakpoints})
+                .setOptions(this.options)
+                .render();
+        }
+        this.$scope.$evalAsync();
     }
 
     getBreakpointRange(breakpoints) {
@@ -414,7 +333,10 @@ class NodeHistogramController {
         });
 
         if (this.graph) {
-            this.graph.setData({histogram: this.plot, breakpoints: this.breakpoints});
+            this.graph
+                .setData({histogram: this.plot, breakpoints: this.breakpoints})
+                .setOptions(this.options)
+                .render();
         }
 
         let renderDefinition = renderDefinitionFromState(this.options, this.breakpoints);
@@ -438,7 +360,10 @@ class NodeHistogramController {
         let renderDefinition = renderDefinitionFromState(this.options, this.breakpoints);
 
         if (this.graph) {
-            this.graph.setData({histogram: this.plot, breakpoints: this.breakpoints});
+            this.graph
+                .setData({histogram: this.plot, breakpoints: this.breakpoints})
+                .setOptions(this.options)
+                .render();
         }
 
         this.updateRenderDefinition({
@@ -486,7 +411,10 @@ class NodeHistogramController {
             let renderDefinition = renderDefinitionFromState(this.options, this.breakpoints);
 
             if (this.graph) {
-                this.graph.setData({histogram: this.plot, breakpoints: this.breakpoints});
+                this.graph
+                    .setData({histogram: this.plot, breakpoints: this.breakpoints})
+                    .setOptions(this.options)
+                    .render();
             }
 
             this.updateRenderDefinition({
