@@ -454,6 +454,7 @@ lazy val backsplash = Project("backsplash", file("backsplash"))
       Dependencies.http4sCirce,
       Dependencies.http4sDSL,
       Dependencies.http4sServer,
+      Dependencies.scalaLambda,
       "com.azavea" %% "maml-jvm" % "0.0.15"
     )
   })

@@ -77,6 +77,7 @@ object Dependencies {
   val scaffeine = "com.github.blemale" %% "scaffeine" % Version.scaffeine
   val scalaCheck = "org.scalacheck" %% "scalacheck" % Version.scalaCheck % "test"
   val scalaCsv = "com.github.tototoshi" %% "scala-csv" % Version.scalaCsv
+  val scalaLambda = "io.github.howardjohn" %% "http4s-lambda" % Version.scalaLambda
   val scalaLogging = "com.typesafe.scala-logging" %% "scala-logging" % Version.scalaLogging
   val scalaforklift = "com.liyaos" %% "scala-forklift-slick" % Version.scalaForklift
   val scalajHttp = "org.scalaj" %% "scalaj-http" % Version.scalajHttp

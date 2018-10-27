@@ -40,6 +40,7 @@ object Version {
   val rollbar = "1.0.1"
   val scaffeine = "2.0.0"
   val scala = "2.11.12"
+  val scalaLambda = "0.3.2"
   val scalaCheck = "1.13.4"
   val scalaCsv = "1.3.5"
   val scalaForklift = "0.3.1"

@@ -91,6 +91,7 @@ services:
       - ./scratch/:/opt/raster-foundry/scratch/
       - ./.sbt:/root/.sbt
       - ./.bintray:/root/.bintray
+      - $HOME/.ivy2:/root/.ivy2
       - $HOME/.aws:/root/.aws:ro
     working_dir: /opt/raster-foundry/app-backend/
     entrypoint: ./sbt
@@ -109,6 +110,7 @@ services:
     volumes:
       - ./app-tasks/rf/:/opt/raster-foundry/app-tasks/rf/
       - ./app-backend/batch/target/scala-2.11/:/opt/raster-foundry/jars/
+      - $HOME/ivy2:/root/.ivy2
       - $HOME/.aws:/root/.aws:ro
     build:
       context: ./app-tasks
@@ -143,6 +145,7 @@ services:
       - ./app-backend/:/opt/raster-foundry/app-backend/
       - ./.sbt:/root/.sbt
       - ./.bintray:/root/.bintray
+      - $HOME/.ivy2:/root/.ivy2
       - $HOME/.aws:/root/.aws:ro
     working_dir: /opt/raster-foundry/app-backend/
     entrypoint: ./sbt
@@ -171,6 +174,7 @@ services:
       - ./app-backend/:/opt/raster-foundry/app-backend/
       - ./.sbt:/root/.sbt
       - ./.bintray:/root/.bintray
+      - $HOME/.ivy2:/root/.ivy2
       - $HOME/.aws:/root/.aws:ro
     working_dir: /opt/raster-foundry/app-backend/
     entrypoint: ./sbt
