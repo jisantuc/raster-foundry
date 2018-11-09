@@ -1,16 +1,20 @@
 module Main where
 
 import           Data.Aeson                       (decode, encode)
-import           Data.RasterFoundry.Types.Project (Project, getProject)
+import           Data.ByteString                  (ByteString)
+import           Data.RasterFoundry.Types.Project (Project, testProject)
 import           Data.RasterFoundry.Types.User    (User, getUser)
+import qualified Database.PostgreSQL.Simple       as Postgres
+import qualified Database.RasterFoundry           as Database
+import           Database.RasterFoundry.Project
+
+connString :: ByteString
+connString = "postgresql://rasterfoundry:rasterfoundry@localhost:5432/rasterfoundry"
 
 main :: IO ()
 main = do
-  project <- getProject
+  conn <- Postgres.connectPostgreSQL connString
   user <- getUser
-  print "Project enc-/decoding works:"
-  print $ (encode <$> Just project) ==
-           (encode <$> ((decode . encode $ project) :: Maybe Project))
-  print "User enc-/decoding works:"
-  print $ (encode <$> Just user)
-           == (encode <$> ((decode . encode $ user) :: Maybe User))
+  handle <- pure $ Database.Handle conn
+  result <- createProject handle testProject user
+  print result

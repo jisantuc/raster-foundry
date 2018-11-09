@@ -42,7 +42,7 @@ instance ToJSON Create where
 getUser :: IO User
 getUser = do
   currentTime <- now
-  return User { Data.RasterFoundry.Types.User.id = "a user"
+  return User { Data.RasterFoundry.Types.User.id = "default"
               , createdAt = currentTime
               , modifiedAt = currentTime
               , dropboxCredential = Nothing

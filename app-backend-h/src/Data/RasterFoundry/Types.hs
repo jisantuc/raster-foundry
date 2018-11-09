@@ -2,7 +2,7 @@ module Data.RasterFoundry.Types (
   Project.Project,
   User.User,
   Time.SqlTime,
-  Project.getProject,
+  Project.testProject,
   User.getUser
 ) where
 
