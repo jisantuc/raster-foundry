@@ -2,7 +2,7 @@ module Main where
 
 import           Data.Aeson                       (decode, encode)
 import           Data.ByteString                  (ByteString)
-import           Data.RasterFoundry.Types.Project (Project, testProject)
+import qualified Data.RasterFoundry.Types.Project as Project
 import           Data.RasterFoundry.Types.User    (User, getUser)
 import qualified Database.PostgreSQL.Simple       as Postgres
 import qualified Database.RasterFoundry           as Database
@@ -16,5 +16,7 @@ main = do
   conn <- Postgres.connectPostgreSQL connString
   user <- getUser
   handle <- pure $ Database.Handle conn
-  result <- createProject handle testProject user
+  result <- createProject handle Project.testProject user
+  fetchResult <- getProject handle (Project.id . head $ result)
   print result
+  print fetchResult

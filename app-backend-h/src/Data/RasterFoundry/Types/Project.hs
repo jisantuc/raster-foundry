@@ -10,6 +10,7 @@ import           Data.ByteString.Builder              (Builder, lazyByteString)
 import           Data.ByteString.Lazy                 (fromStrict)
 import           Data.Maybe                           (fromMaybe)
 import           Data.RasterFoundry.Types.Time        (SqlTime, now)
+import           Data.RasterFoundry.Types.Visibility  (Visibility(..))
 import qualified Data.Text                            as T
 import           Data.UUID                            (UUID, nil)
 import qualified Data.UUID.V4                         as UUIDv4
@@ -63,11 +64,11 @@ data Project = Project { id                :: UUID
                        , name              :: String
                        , slugLabel         :: String
                        , description       :: String
-                       , visibility        :: String
+                       , visibility        :: Visibility
                        , tags              :: Postgres.PGArray String
                        , manualOrder       :: Bool
                        , extent            :: Maybe Geometry
-                       , tileVisibility    :: String
+                       , tileVisibility    :: Visibility
                        , isAOIProject      :: Bool
                        , aoiCadenceMillis  :: Integer
                        , aoisLastChecked   :: SqlTime
@@ -112,8 +113,8 @@ toProject create userId = do
                  , singleBandOptions = _singleBandOptions create
                  , extent = Nothing
                  , slugLabel = "lol"
-                 , visibility = "PRIVATE"
-                 , tileVisibility = "PRIVATE"
+                 , visibility = Private
+                 , tileVisibility = Private
                  , manualOrder = False }
 
 testProject :: Create
