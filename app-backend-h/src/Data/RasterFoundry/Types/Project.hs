@@ -1,6 +1,9 @@
 module Data.RasterFoundry.Types.Project (
   Project (..),
   Create (..),
+  Geometry (..),
+  GeometryType (..),
+  SingleBandOptions (..),
   testProject,
   toProject,
   toUpdate
@@ -41,7 +44,7 @@ instance FromJSON GeometryType where
       toGeom "Polygon" = Polygon
       toGeom s         = error "nah"
 
-type Point = (Double, Double)
+type Point = (Int, Int)
 
 data Geometry = Polygon1 { coordinates :: [[Point]]
                          , _type       :: GeometryType } deriving (Eq, Show)

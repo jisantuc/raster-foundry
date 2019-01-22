@@ -1,7 +1,7 @@
 name:                app-backend-h
 version:             0.1.0.0
 github:              "jisantuc/haskell-foundry"
-license:             "Apache2"
+license:             "BSD3"
 author:              "James Santucci"
 maintainer:          "james.santucci@gmail.com"
 copyright:           "2018 James Santucci"
@@ -50,6 +50,7 @@ executables:
 tests:
   app-backend-h-test:
     main:                Spec.hs
+    other-modules:       Types
     source-dirs:         test
     ghc-options:
     - -threaded
@@ -57,6 +58,8 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - app-backend-h
+    - aeson
+    - containers
     - QuickCheck
     - quickcheck-instances
     default-extensions: DeriveGeneric
