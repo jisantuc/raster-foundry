@@ -30,6 +30,9 @@ instance Arbitrary TestHandle where
         conn <- Postgres.connectPostgreSQL connString
         pure $ Database.Handle conn
 
+instance Show TestHandle where
+  show _ = "test db handle"
+
 newtype WebMercatorX = WebMercatorX Int deriving (Eq, Show, Ord)
 instance Enum WebMercatorX where
   toEnum x = (toEnum x)
@@ -138,7 +141,7 @@ instance Arbitrary TestProject where
         _isAOIProject _aoiCadenceMillis
         _aoisLastChecked _owner _isSingleBand _singleBandOptions
 
-newtype TestProjectCreate = TestProjectCreate Create
+newtype TestProjectCreate = TestProjectCreate Create deriving (Show)
 instance Arbitrary TestProjectCreate where
   arbitrary = TestProjectCreate <$>
     do
