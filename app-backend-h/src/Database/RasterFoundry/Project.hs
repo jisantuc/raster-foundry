@@ -11,6 +11,7 @@ import           Data.UUID                           (UUID)
 import           Database.PostgreSQL.Simple.SqlQQ
 import           GHC.Int                             (Int64)
 
+-- choose a default layer id at random from the layers that happen to be in my dev database
 insertQuery :: Postgres.Query
 insertQuery =
   [sql|INSERT INTO projects (
@@ -32,8 +33,9 @@ insertQuery =
       aois_last_checked,
       owner,
       is_single_band,
-      single_band_options
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      single_band_options,
+      default_layer_id
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '544e4ba7-6679-4d2d-bc90-8aaac7ce0502')
     RETURNING id,
     created_at,
     modified_at,

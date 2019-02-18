@@ -12,16 +12,6 @@ import           Database.RasterFoundry.Project
 connString :: ByteString
 connString = "postgresql://rasterfoundry:rasterfoundry@localhost:5432/rasterfoundry"
 
-someAndFilters :: [Filter.AndFilter]
-someAndFilters = [ Filter.andFilter "created_at < '2018-10-23'"
-                 , Filter.andFilter "created_at > '2018-07-19'"
-                 ]
-
-someOrFilters :: [Filter.OrFilter]
-someOrFilters = [ Filter.orFilter "owner = 'a bogus user who does not exist'"
-                 , Filter.orFilter "created_at > '2018-07-19'"
-                 ]
-
 main :: IO ()
 main = do
   print "you're doing great"
