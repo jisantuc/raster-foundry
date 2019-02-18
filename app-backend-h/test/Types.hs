@@ -129,7 +129,7 @@ instance Arbitrary TestProject where
       _isAOIProject <- arbitrary
       _aoiCadenceMillis <- arbitrary
       (TestSqlTime _aoisLastChecked) <- arbitrary
-      _owner <- arbitrary
+      _owner <- return "default"
       _isSingleBand <- arbitrary
       _singleBandOptions <- if (_isSingleBand) then
         pure . SingleBandOptions <$> arbitrary else
@@ -149,7 +149,7 @@ instance Arbitrary TestProjectCreate where
       _description <- arbitrary
       _isAOIProject <- arbitrary
       _aoiCadenceMillis <- arbitrary
-      _owner <- arbitrary
+      _owner <- return $ Just "default"
       (TestPGArray _tags) <- arbitrary
       _isSingleBand <- arbitrary
       _singleBandOptions <- if (_isSingleBand) then
